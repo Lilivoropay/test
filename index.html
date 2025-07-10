@@ -5,24 +5,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script type="module">
-      import Viewer from "https://unpkg.com/@speckle/viewer@2.16.6";
+      import { ViewerApp, DefaultPlugins } from "https://unpkg.com/@speckle/viewer@2.16.6";
 
       const streamId = "d90ed744a3"
-      const objectId = "733a102ccc"
+      const modelId = "733a102ccc"
+      const versionId = "main"
 
       const container = document.getElementById("viewer")
-      const viewer = await Viewer.create(container)
-      await viewer.loadObject(`https://app.speckle.systems/streams/${streamId}/objects/${objectId}`)
+      const viewer = new ViewerApp({
+        container,
+        plugins: [...DefaultPlugins]
+      })
 
-      // Зчитування всіх елементів
-      const elements = await viewer.getWorldTreeItems()
+      await viewer.init()
+      await viewer.loadObject(`https://app.speckle.systems/streams/${streamId}/models/${modelId}?version=${versionId}`)
+
+      const worldTree = viewer.getWorldTree()
+      const objects = worldTree.getFlattenedItems()
+
       const colors = ["#7f3fbf", "#1fa672", "#d96528", "#ffcc00", "#3273dc", "#f14668"]
       const assemblyGroups = {}
-
       let index = 0
-      for (const el of elements) {
-        const props = await viewer.getObjectProperties(el)
-        const assembly = props?."Assembly Name"
+
+      for (const el of objects) {
+        const data = el.model.raw.properties?.parameters?.builtIn || {}
+        const assembly = data["Assembly Name"]
         if (!assembly) continue
 
         if (!assemblyGroups[assembly]) {
@@ -32,10 +39,9 @@
           }
           index++
         }
-        assemblyGroups[assembly].ids.push(el)
+        assemblyGroups[assembly].ids.push(el.id)
       }
 
-      // Фарбування
       for (const group of Object.values(assemblyGroups)) {
         await viewer.setColor(group.ids, group.color)
       }
