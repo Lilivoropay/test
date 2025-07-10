@@ -1,0 +1,57 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Speckle Viewer - Assembly Filter</title>
+    <script src="https://unpkg.com/@speckle/viewer@2.16.6"></script>
+    <style>
+        html, body, #speckle-viewer-container {
+            margin: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div id="speckle-viewer-container"></div>
+    <script type="module">
+        import Viewer from "https://unpkg.com/@speckle/viewer@2.16.6";
+
+        const container = document.getElementById("speckle-viewer-container");
+
+        const viewer = new Viewer.Viewer(container);
+        await viewer.init();
+
+        // Stream and model info
+        const streamId = "d90ed744a3";
+        const modelId = "733a102ccc";
+
+        await viewer.loadObject(streamId, modelId);
+
+        // Define coloring logic by Assembly Name
+        const colorMap = {
+            "UD-T1": "#6A0DAD",
+            "UD-T2": "#009B77",
+            "UD-T3": "#E87722"
+        };
+
+        const worldTree = await viewer.getWorldTree();
+        const allNodes = worldTree.getFlattenedTree();
+
+        for (const node of allNodes) {
+            const props = await viewer.getObjectProperties(node.id);
+            const assemblyName = props?.["Assembly Name"] || props?.["assembly name"];
+
+            if (assemblyName && colorMap[assemblyName]) {
+                viewer.setColor(node.id, colorMap[assemblyName]);
+            } else {
+                viewer.setGhosted(node.id, true);
+            }
+        }
+
+        viewer.zoomExtents();
+    </script>
+</body>
+</html>
